@@ -13,8 +13,30 @@ public class ReviewsService : IReviewsService
         _repo = repo;
     }
 
-    public Task<PagedResult<Review>> GetByAttractionAsync(Guid attractionId, int page, int pageSize)
-        => _repo.GetByAttractionAsync(attractionId, page, pageSize);
+    public async Task<PagedResult<AttractionReviewDto>> GetByAttractionAsync(Guid attractionId, int page, int pageSize)
+    {
+        var result = await _repo.GetByAttractionAsync(attractionId, page, pageSize);
+        return new PagedResult<AttractionReviewDto>
+        {
+            Items = result.Items.Select(review => new AttractionReviewDto
+            {
+                ReviewId = review.ReviewId,
+                AttractionId = review.AttractionId,
+                UserId = review.UserId,
+                CommentText = review.CommentText,
+                Score = review.Score,
+                CreatedAt = review.CreatedAt,
+                User = new ReviewAuthorSummaryDto
+                {
+                    UserId = review.User.UserId,
+                    Username = review.User.Username
+                }
+            }).ToList(),
+            Page = result.Page,
+            PageSize = result.PageSize,
+            TotalCount = result.TotalCount
+        };
+    }
     public async Task<PagedResult<ReviewSummaryDto>> GetByUserAsync(Guid userId, int page, int pageSize)
     {
         var result = await _repo.GetByUserAsync(userId, page, pageSize);

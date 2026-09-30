@@ -63,3 +63,20 @@ public class ReviewedAttractionSummaryDto
     public string Name { get; set; }
     public CitySummaryDto City { get; set; }
 }
+
+public class AttractionReviewDto
+{
+    public Guid ReviewId { get; set; }
+    public Guid AttractionId { get; set; }
+    public Guid UserId { get; set; }
+    public string CommentText { get; set; }
+    public int Score { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public ReviewAuthorSummaryDto User { get; set; }
+}
+
+public class ReviewAuthorSummaryDto
+{
+    public Guid UserId { get; set; }
+    public string Username { get; set; }
+}
