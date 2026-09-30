@@ -14,6 +14,17 @@ public class UserSummaryDto
     public string Username { get; set; }
     public string Email { get; set; }
     public DateTime CreatedAt { get; set; }
+    public IReadOnlyList<UserReviewSummaryDto> Reviews { get; set; } = Array.Empty<UserReviewSummaryDto>();
+}
+
+public class UserReviewSummaryDto
+{
+    public Guid ReviewId { get; set; }
+    public Guid AttractionId { get; set; }
+    public string AttractionName { get; set; }
+    public string CommentText { get; set; }
+    public int Score { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class CategorySummaryDto

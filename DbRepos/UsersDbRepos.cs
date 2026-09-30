@@ -35,7 +35,19 @@ public class UsersDbRepos : IUsersDbRepos
                 UserId = user.UserId,
                 Username = user.Username,
                 Email = user.Email,
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                Reviews = user.Reviews
+                    .OrderByDescending(review => review.CreatedAt)
+                    .Select(review => new UserReviewSummaryDto
+                    {
+                        ReviewId = review.ReviewId,
+                        AttractionId = review.AttractionId,
+                        AttractionName = review.Attraction.Name,
+                        CommentText = review.CommentText,
+                        Score = review.Score,
+                        CreatedAt = review.CreatedAt
+                    })
+                    .ToList()
             })
             .ToListAsync();
 
