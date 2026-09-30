@@ -2,10 +2,10 @@ namespace Models;
 
 public class User : IUser
 {
-    public Guid UserId { get; set; }
-    public string Username { get; set; }
-    public string Email { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public virtual Guid UserId { get; set; }
+    public virtual string Username { get; set; }
+    public virtual string Email { get; set; }
+    public virtual DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
 }

@@ -12,64 +12,68 @@ namespace DbContext.Migrations.SqlServerDbContext
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Categories",
+                name: "Category",
                 columns: table => new
                 {
                     CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "varchar(200)", nullable: true)
+                    Name = table.Column<string>(type: "varchar(200)", nullable: true),
+                    Discriminator = table.Column<string>(type: "varchar(200)", maxLength: 13, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Categories", x => x.CategoryId);
+                    table.PrimaryKey("PK_Category", x => x.CategoryId);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Countries",
+                name: "Country",
                 columns: table => new
                 {
                     CountryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "varchar(200)", nullable: true)
+                    Name = table.Column<string>(type: "varchar(200)", nullable: true),
+                    Discriminator = table.Column<string>(type: "varchar(200)", maxLength: 13, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Countries", x => x.CountryId);
+                    table.PrimaryKey("PK_Country", x => x.CountryId);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Users",
+                name: "User",
                 columns: table => new
                 {
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Username = table.Column<string>(type: "varchar(200)", nullable: true),
                     Email = table.Column<string>(type: "varchar(200)", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Discriminator = table.Column<string>(type: "varchar(200)", maxLength: 8, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Users", x => x.UserId);
+                    table.PrimaryKey("PK_User", x => x.UserId);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Cities",
+                name: "City",
                 columns: table => new
                 {
                     CityId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CountryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "varchar(200)", nullable: true)
+                    Name = table.Column<string>(type: "varchar(200)", nullable: true),
+                    Discriminator = table.Column<string>(type: "varchar(200)", maxLength: 8, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Cities", x => x.CityId);
+                    table.PrimaryKey("PK_City", x => x.CityId);
                     table.ForeignKey(
-                        name: "FK_Cities_Countries_CountryId",
+                        name: "FK_City_Country_CountryId",
                         column: x => x.CountryId,
-                        principalTable: "Countries",
+                        principalTable: "Country",
                         principalColumn: "CountryId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Attractions",
+                name: "Attraction",
                 columns: table => new
                 {
                     AttractionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -77,15 +81,16 @@ namespace DbContext.Migrations.SqlServerDbContext
                     Name = table.Column<string>(type: "varchar(200)", nullable: true),
                     Description = table.Column<string>(type: "varchar(200)", nullable: true),
                     Address = table.Column<string>(type: "varchar(200)", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Discriminator = table.Column<string>(type: "varchar(200)", maxLength: 13, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Attractions", x => x.AttractionId);
+                    table.PrimaryKey("PK_Attraction", x => x.AttractionId);
                     table.ForeignKey(
-                        name: "FK_Attractions_Cities_CityId",
+                        name: "FK_Attraction_City_CityId",
                         column: x => x.CityId,
-                        principalTable: "Cities",
+                        principalTable: "City",
                         principalColumn: "CityId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -101,46 +106,52 @@ namespace DbContext.Migrations.SqlServerDbContext
                 {
                     table.PrimaryKey("PK_AttractionCategories", x => new { x.AttractionsAttractionId, x.CategoriesCategoryId });
                     table.ForeignKey(
-                        name: "FK_AttractionCategories_Attractions_AttractionsAttractionId",
+                        name: "FK_AttractionCategories_Attraction_AttractionsAttractionId",
                         column: x => x.AttractionsAttractionId,
-                        principalTable: "Attractions",
+                        principalTable: "Attraction",
                         principalColumn: "AttractionId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_AttractionCategories_Categories_CategoriesCategoryId",
+                        name: "FK_AttractionCategories_Category_CategoriesCategoryId",
                         column: x => x.CategoriesCategoryId,
-                        principalTable: "Categories",
+                        principalTable: "Category",
                         principalColumn: "CategoryId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Reviews",
+                name: "Review",
                 columns: table => new
                 {
                     ReviewId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     AttractionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CommentText = table.Column<string>(type: "varchar(200)", nullable: true),
-                    Score = table.Column<byte>(type: "tinyint", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Score = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Discriminator = table.Column<string>(type: "varchar(200)", maxLength: 13, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Reviews", x => x.ReviewId);
+                    table.PrimaryKey("PK_Review", x => x.ReviewId);
                     table.ForeignKey(
-                        name: "FK_Reviews_Attractions_AttractionId",
+                        name: "FK_Review_Attraction_AttractionId",
                         column: x => x.AttractionId,
-                        principalTable: "Attractions",
+                        principalTable: "Attraction",
                         principalColumn: "AttractionId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Reviews_Users_UserId",
+                        name: "FK_Review_User_UserId",
                         column: x => x.UserId,
-                        principalTable: "Users",
+                        principalTable: "User",
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Attraction_CityId",
+                table: "Attraction",
+                column: "CityId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AttractionCategories_CategoriesCategoryId",
@@ -148,23 +159,18 @@ namespace DbContext.Migrations.SqlServerDbContext
                 column: "CategoriesCategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Attractions_CityId",
-                table: "Attractions",
-                column: "CityId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Cities_CountryId",
-                table: "Cities",
+                name: "IX_City_CountryId",
+                table: "City",
                 column: "CountryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reviews_AttractionId",
-                table: "Reviews",
+                name: "IX_Review_AttractionId",
+                table: "Review",
                 column: "AttractionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reviews_UserId",
-                table: "Reviews",
+                name: "IX_Review_UserId",
+                table: "Review",
                 column: "UserId");
         }
 
@@ -175,22 +181,22 @@ namespace DbContext.Migrations.SqlServerDbContext
                 name: "AttractionCategories");
 
             migrationBuilder.DropTable(
-                name: "Reviews");
+                name: "Review");
 
             migrationBuilder.DropTable(
-                name: "Categories");
+                name: "Category");
 
             migrationBuilder.DropTable(
-                name: "Attractions");
+                name: "Attraction");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "User");
 
             migrationBuilder.DropTable(
-                name: "Cities");
+                name: "City");
 
             migrationBuilder.DropTable(
-                name: "Countries");
+                name: "Country");
         }
     }
 }

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Models;
+using Models.DTO;
 using Services;
-using DbRepos;
 
 namespace AppWebApi.Controllers;
 
@@ -13,26 +13,26 @@ public class TravelController : ControllerBase
     private readonly IAttractionsService _attractionsService;
     private readonly IReviewsService _reviewsService;
     private readonly IUsersService _usersService;
-    private readonly IAdminDbRepos _adminDbRepos;
+    private readonly IAdminService _adminService;
 
     public TravelController(
         ICitiesService citiesService,
         IAttractionsService attractionsService,
         IReviewsService reviewsService,
         IUsersService usersService,
-        IAdminDbRepos adminDbRepos)
+        IAdminService adminService)
     {
         _citiesService = citiesService;
         _attractionsService = attractionsService;
         _reviewsService = reviewsService;
         _usersService = usersService;
-        _adminDbRepos = adminDbRepos;
+        _adminService = adminService;
     }
 
     [HttpPost("seed")]
     public async Task<IActionResult> Seed()
     {
-        await _adminDbRepos.SeedAsync(0);
+        await _adminService.SeedAsync(0);
         return Ok(new
         {
             message = "Seeded assignment test data.",
@@ -45,9 +45,13 @@ public class TravelController : ControllerBase
     }
 
     [HttpGet("cities")]
-    public async Task<IActionResult> GetCities()
+    public async Task<IActionResult> GetCities(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
-        var cities = await _citiesService.GetAllAsync();
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var cities = await _citiesService.GetPagedAsync(page, pageSize);
         return Ok(cities);
     }
 
@@ -84,9 +88,14 @@ public class TravelController : ControllerBase
         => Ok(await _attractionsService.GetWithoutReviewsAsync(Math.Max(1, page), Math.Clamp(pageSize, 1, 100)));
 
     [HttpGet("attractions/{attractionId:guid}")]
-    public async Task<IActionResult> GetAttraction(Guid attractionId)
+    public async Task<IActionResult> GetAttraction(
+        Guid attractionId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
-        var attraction = await _attractionsService.GetByIdAsync(attractionId);
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var attraction = await _attractionsService.GetDetailsAsync(attractionId, page, pageSize);
         if (attraction == null)
             return NotFound();
 
@@ -96,6 +105,18 @@ public class TravelController : ControllerBase
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers(int page = 1, int pageSize = 20)
         => Ok(await _usersService.GetPagedAsync(Math.Max(1, page), Math.Clamp(pageSize, 1, 100)));
+
+    [HttpGet("users/{userId:guid}/reviews")]
+    public async Task<IActionResult> GetReviewsForUser(
+        Guid userId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var reviews = await _reviewsService.GetByUserAsync(userId, page, pageSize);
+        return Ok(reviews);
+    }
 
     [HttpGet("attractions/{attractionId:guid}/reviews")]
     public async Task<IActionResult> GetReviewsForAttraction(
@@ -110,25 +131,39 @@ public class TravelController : ControllerBase
     }
 
     [HttpPost("attractions/{attractionId:guid}/reviews")]
-    public async Task<IActionResult> AddReview(Guid attractionId, [FromBody] Review review)
+    public async Task<IActionResult> AddReview(Guid attractionId, [FromBody] CreateReviewRequest request)
     {
-        if (review == null)
+        if (request == null)
             return BadRequest();
 
-        review.AttractionId = attractionId;
-        review.CreatedAt = DateTime.UtcNow;
+        var review = new Review
+        {
+            ReviewId = Guid.NewGuid(),
+            AttractionId = attractionId,
+            UserId = request.UserId,
+            CommentText = request.CommentText,
+            Score = request.Score,
+            CreatedAt = DateTime.UtcNow
+        };
 
         await _reviewsService.AddAsync(review);
         return Ok(review);
     }
 
     [HttpPost("users")]
-    public async Task<IActionResult> AddUser([FromBody] User user)
+    public async Task<IActionResult> AddUser([FromBody] CreateUserRequest request)
     {
-        if (user == null)
+        if (request == null)
             return BadRequest();
 
-        user.CreatedAt = DateTime.UtcNow;
+        var user = new User
+        {
+            UserId = Guid.NewGuid(),
+            Username = request.Username,
+            Email = request.Email,
+            CreatedAt = DateTime.UtcNow
+        };
+
         await _usersService.AddAsync(user);
         return Ok(user);
     }

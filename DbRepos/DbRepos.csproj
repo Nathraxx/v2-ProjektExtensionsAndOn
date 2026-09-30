@@ -11,4 +11,11 @@
     <ProjectReference Include="..\DbModels\DbModels.csproj" />
     <ProjectReference Include="..\Configuration\Configuration.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\DbContext\SqlScripts\sqlserver\ClearTravelTestData.sql"
+             Link="SqlScripts\sqlserver\ClearTravelTestData.sql"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

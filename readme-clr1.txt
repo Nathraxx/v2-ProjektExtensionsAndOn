@@ -33,5 +33,9 @@ To create the AppWebApi
 4. Use From Azure Data Studio to explore the created database and it's schema 
    Notice that one table is implemented in the database
 
-5. Use endpoint Admin/Seed to fill the database Quote table with content.
-   Check the content using Azure Data Studio
+5. 50 användare
+   100 städer
+   1000 sevärdheter
+   0–20 recensioner per sevärdhet
+   4 länder
+   kategorier

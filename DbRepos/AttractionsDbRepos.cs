@@ -14,11 +14,14 @@ public class AttractionsDbRepos : IAttractionsDbRepos
     }
 
     public async Task<List<Attraction>> GetAllAsync()
-        => await _dbContext.Attractions
+    {
+        var attractions = await _dbContext.Attractions
             .Include(a => a.City)
             .Include(a => a.Categories)
             .AsNoTracking()
             .ToListAsync();
+        return attractions.Cast<Attraction>().ToList();
+    }
 
     public async Task<PagedResult<Attraction>> SearchAsync(
         string? category, string? title, string? description,
@@ -43,10 +46,11 @@ public class AttractionsDbRepos : IAttractionsDbRepos
             query = query.Where(a => a.City.Name.Contains(city));
 
         var totalCount = await query.CountAsync();
-        var items = await query.OrderBy(a => a.Name)
+        var dbItems = await query.OrderBy(a => a.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+        var items = dbItems.Cast<Attraction>().ToList();
 
         return new PagedResult<Attraction>
         {
@@ -65,10 +69,11 @@ public class AttractionsDbRepos : IAttractionsDbRepos
             .Include(a => a.Categories)
             .AsNoTracking();
         var totalCount = await query.CountAsync();
-        var items = await query.OrderBy(a => a.Name)
+        var dbItems = await query.OrderBy(a => a.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+        var items = dbItems.Cast<Attraction>().ToList();
 
         return new PagedResult<Attraction>
         {
@@ -87,10 +92,11 @@ public class AttractionsDbRepos : IAttractionsDbRepos
             .Include(a => a.City)
             .AsNoTracking();
         var totalCount = await query.CountAsync();
-        var items = await query.OrderBy(a => a.Name)
+        var dbItems = await query.OrderBy(a => a.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+        var items = dbItems.Cast<Attraction>().ToList();
 
         return new PagedResult<Attraction>
         {
@@ -105,13 +111,20 @@ public class AttractionsDbRepos : IAttractionsDbRepos
         => await _dbContext.Attractions
             .Include(a => a.City)
             .Include(a => a.Categories)
-            .Include(a => a.Reviews)
-                .ThenInclude(r => r.User)
+            .AsNoTracking()
             .FirstOrDefaultAsync(a => a.AttractionId == attractionId);
 
     public async Task AddAsync(Attraction attraction)
     {
-        _dbContext.Attractions.Add(attraction);
+        _dbContext.Attractions.Add(new DbModels.AttractionDbM
+        {
+            AttractionId = attraction.AttractionId,
+            CityId = attraction.CityId,
+            Name = attraction.Name,
+            Description = attraction.Description,
+            Address = attraction.Address,
+            CreatedAt = attraction.CreatedAt
+        });
         await _dbContext.SaveChangesAsync();
     }
 }

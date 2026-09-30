@@ -1,14 +1,31 @@
-# Travel database ERD
+# Travel ERD TOMAS RUNNVIK - Projekt.
+ Då jag utgått ifrån vår förra kurs med databasprojektet har jag följt samma struktur. 
+Modeller: `Country`, `City`, `Attraction`, `Category`, `Review` och `User`.
 
-The model uses one-to-many relationships for countries/cities, cities/attractions, attractions/reviews, and users/reviews. Attractions and categories use an EF Core many-to-many relationship through the generated `AttractionCategories` junction table.
+ Ett land kan ha flera cities 1-* en till många.
+
+ En stad kan ha flera attractions 1-* en till många.
+
+ En attraktion kan ha flera reviews 1-* en till många.
+
+ En användare kan skriva flera reviews 1-* en till många
+ .
+ En attraktion kan tillhöra flera categories *-* många till många.
+
+ Använder uniqueidentifier/Guid som primärnyckel för alla tabeller för att säkerställa globala unika identifierare.
+
+ Attractions och categories har en många-till-många-relation via en junction table.
+
 
 ```mermaid
 erDiagram
     COUNTRY ||--o{ CITY : contains
     CITY ||--o{ ATTRACTION : contains
-    ATTRACTION }o--o{ CATEGORY : classified_as
+    
     ATTRACTION ||--o{ REVIEW : receives
     USER ||--o{ REVIEW : writes
+    ATTRACTION ||--o{ ATTRACTIONCATEGORIES : contains
+    CATEGORY ||--o{ ATTRACTIONCATEGORIES : contains
 
     COUNTRY {
         uniqueidentifier CountryId PK
@@ -24,18 +41,23 @@ erDiagram
         uniqueidentifier CityId FK
         varchar Name
         varchar Description
+        varchar Address
         datetime2 CreatedAt
     }
     CATEGORY {
         uniqueidentifier CategoryId PK
         varchar Name
     }
+    ATTRACTIONCATEGORIES {
+        uniqueidentifier AttractionId PK, FK
+        uniqueidentifier CategoryId PK, FK
+    }
     REVIEW {
         uniqueidentifier ReviewId PK
         uniqueidentifier AttractionId FK
         uniqueidentifier UserId FK
         varchar CommentText
-        tinyint Score
+        int Score
         datetime2 CreatedAt
     }
     USER {

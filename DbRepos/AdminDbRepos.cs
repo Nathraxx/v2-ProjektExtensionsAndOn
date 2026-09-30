@@ -2,6 +2,7 @@
 using DbContext;
 using Configuration;
 using Models;
+using DbModels;
 using Seido.Utilities.SeedGenerator;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,21 +16,6 @@ public class AdminDbRepos : IAdminDbRepos
 
     public async Task SeedAsync(int nrItems)
     {
-        var hasRequiredSeedData = await _dbContext.Users.CountAsync() >= 50
-            && await _dbContext.Cities.CountAsync() >= 100
-            && await _dbContext.Attractions.CountAsync() >= 1000;
-
-        if (hasRequiredSeedData)
-        {
-            _logger.LogInformation("Database already contains seed data; skipping travel seeding.");
-            return;
-        }
-
-        if (await _dbContext.Countries.AnyAsync())
-            await ClearTestDataAsync();
-
-        var generator = new SeedGenerator();
-
         var categoryNames = new[]
         {
             "Museum",
@@ -42,34 +28,75 @@ public class AdminDbRepos : IAdminDbRepos
             "Architecture"
         };
 
+        var hasRequiredSeedData = await _dbContext.Users.CountAsync() >= 50
+            && await _dbContext.Countries.CountAsync() >= 4
+            && await _dbContext.Cities.CountAsync() >= 100
+            && await _dbContext.Attractions.CountAsync() >= 1000
+            && await _dbContext.Categories.CountAsync() >= categoryNames.Length
+            && !await _dbContext.Attractions.AnyAsync(attraction => !attraction.Categories.Any())
+            && !await _dbContext.Attractions.AnyAsync(attraction => attraction.Reviews.Count > 20);
+
+        if (hasRequiredSeedData)
+        {
+            _logger.LogInformation("Database already contains seed data; skipping travel seeding.");
+            return;
+        }
+
+        var hasExistingData = await _dbContext.Countries.AnyAsync()
+            || await _dbContext.Cities.AnyAsync()
+            || await _dbContext.Attractions.AnyAsync()
+            || await _dbContext.Categories.AnyAsync()
+            || await _dbContext.Users.AnyAsync()
+            || await _dbContext.Reviews.AnyAsync();
+
+        if (hasExistingData)
+            await ClearTestDataAsync();
+
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        var reviewCount = 0;
+        await strategy.ExecuteAsync(async () =>
+        {
+            _dbContext.ChangeTracker.Clear();
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            reviewCount = await SeedTravelDataAsync(categoryNames);
+            await transaction.CommitAsync();
+        });
+
+        _logger.LogInformation("Seeded 4 countries, 100 cities, 1000 attractions, {ReviewCount} reviews and 50 users.",
+            reviewCount);
+    }
+
+    private async Task<int> SeedTravelDataAsync(string[] categoryNames)
+    {
+        var generator = new SeedGenerator();
         var categories = categoryNames
-            .Select(name => new Category { CategoryId = Guid.NewGuid(), Name = name })
+            .Select(name => new CategoryDbM { CategoryId = Guid.NewGuid(), Name = name })
+            .ToList();
+        var countries = new[] { "Sweden", "Norway", "Denmark", "Finland" }
+            .Select(name => new CountryDbM { CountryId = Guid.NewGuid(), Name = name })
             .ToList();
 
         _dbContext.Categories.AddRange(categories);
-
-        var countries = new[] { "Sweden", "Norway", "Denmark", "Finland" }
-            .Select(name => new Country { CountryId = Guid.NewGuid(), Name = name, Cities = new List<City>() })
-            .ToList();
-
         _dbContext.Countries.AddRange(countries);
         await _dbContext.SaveChangesAsync();
 
-        var cities = new List<City>();
-        foreach (var country in countries)
+        var countryAssignments = countries.ToList();
+        while (countryAssignments.Count < 100)
+            countryAssignments.Add(countries[generator.Next(0, countries.Count)]);
+
+        for (var index = countryAssignments.Count - 1; index > 0; index--)
         {
-            for (var i = 0; i < 25; i++)
-            {
-                cities.Add(new City
-                {
-                    CityId = Guid.NewGuid(),
-                    CountryId = country.CountryId,
-                    Name = $"{country.Name} City {i + 1}",
-                    Country = country,
-                    Attractions = new List<Attraction>()
-                });
-            }
+            var swapIndex = generator.Next(0, index + 1);
+            (countryAssignments[index], countryAssignments[swapIndex]) =
+                (countryAssignments[swapIndex], countryAssignments[index]);
         }
+
+        var cities = countryAssignments.Select((country, index) => new CityDbM
+        {
+            CityId = Guid.NewGuid(),
+            CountryId = country.CountryId,
+            Name = $"{country.Name} City {index + 1}"
+        }).ToList();
 
         _dbContext.Cities.AddRange(cities);
         await _dbContext.SaveChangesAsync();
@@ -79,88 +106,75 @@ public class AdminDbRepos : IAdminDbRepos
             "Main Street", "Harbor Road", "Oak Avenue", "Market Square",
             "River Lane", "Church Street", "Park Boulevard", "Station Road"
         };
+        var attractionTypes = new[] { "Viewpoint", "Garden", "Market", "Museum", "Harbor", "Square" };
+        var attractions = new List<AttractionDbM>(1000);
 
-        var attractions = new List<Attraction>();
-        foreach (var city in cities)
+        for (var index = 0; index < 1000; index++)
         {
-            for (var i = 0; i < 10; i++)
+            var city = cities[generator.Next(0, cities.Count)];
+            var firstCategoryIndex = generator.Next(0, categories.Count);
+            var secondCategoryIndex = generator.Next(0, categories.Count - 1);
+            if (secondCategoryIndex >= firstCategoryIndex)
+                secondCategoryIndex++;
+
+            attractions.Add(new AttractionDbM
             {
-                var categorySet = categories
-                    .OrderBy(_ => Guid.NewGuid())
-                    .Take(2)
-                    .ToList();
-
-                // random street + house number gives each attraction a unique address within the city
-                var address = $"{streetNames[generator.Next(0, streetNames.Length)]} {generator.Next(1, 200)}";
-
-                var attraction = new Attraction
+                AttractionId = Guid.NewGuid(),
+                CityId = city.CityId,
+                Name = $"{city.Name} {attractionTypes[generator.Next(0, attractionTypes.Length)]} {index + 1}",
+                Description = $"A popular destination in {city.Name} with a strong mix of local culture and travel experiences.",
+                Address = $"{streetNames[generator.Next(0, streetNames.Length)]} {generator.Next(1, 200)}",
+                CreatedAt = generator.DateAndTime(2023, 2025),
+                Categories = new List<Category>
                 {
-                    AttractionId = Guid.NewGuid(),
-                    CityId = city.CityId,
-                    Name = $"{city.Name} {generator.FromList(new List<string> { "Viewpoint", "Garden", "Market", "Museum", "Harbor", "Square" })} {i + 1}",
-                    Description = $"A popular destination in {city.Name} with a strong mix of local culture and travel experiences.",
-                    Address = address,
-                    CreatedAt = generator.DateAndTime(2023, 2025),
-                    City = city,
-                    Categories = categorySet,
-                    Reviews = new List<Review>()
-                };
-
-                attractions.Add(attraction);
-            }
+                    categories[firstCategoryIndex],
+                    categories[secondCategoryIndex]
+                }
+            });
         }
 
         _dbContext.Attractions.AddRange(attractions);
         await _dbContext.SaveChangesAsync();
 
-        var users = new List<User>();
-        for (var i = 0; i < 50; i++)
+        var users = new List<UserDbM>();
+        for (var index = 0; index < 50; index++)
         {
             var firstName = generator.FirstName;
             var lastName = generator.LastName;
-            users.Add(new User
+            users.Add(new UserDbM
             {
                 UserId = Guid.NewGuid(),
                 Username = $"{firstName}.{lastName}".ToLowerInvariant(),
                 Email = generator.Email(firstName, lastName),
-                CreatedAt = generator.DateAndTime(2022, 2025),
-                Reviews = new List<Review>()
+                CreatedAt = generator.DateAndTime(2022, 2025)
             });
         }
 
         _dbContext.Users.AddRange(users);
         await _dbContext.SaveChangesAsync();
 
-        var reviews = new List<Review>();
+        var reviews = new List<ReviewDbM>();
         foreach (var attraction in attractions)
         {
-            var reviewCount = generator.Next(0, 21);
-            for (var i = 0; i < reviewCount; i++)
+            var attractionReviewCount = generator.Next(0, 21);
+            for (var index = 0; index < attractionReviewCount; index++)
             {
-                var user = users[(i + attraction.GetHashCode()) % users.Count];
-                reviews.Add(new Review
+                var user = users[generator.Next(0, users.Count)];
+                reviews.Add(new ReviewDbM
                 {
                     ReviewId = Guid.NewGuid(),
                     AttractionId = attraction.AttractionId,
                     UserId = user.UserId,
                     CommentText = $"I really enjoyed the atmosphere and the local recommendations around {attraction.Name}.",
-                    Score = (byte)(generator.Next(3, 6) + 1),
-                    CreatedAt = generator.DateAndTime(2024, 2025),
-                    Attraction = attraction,
-                    User = user
+                    Score = generator.Next(1, 6),
+                    CreatedAt = generator.DateAndTime(2024, 2025)
                 });
             }
         }
 
         _dbContext.Reviews.AddRange(reviews);
         await _dbContext.SaveChangesAsync();
-
-        _logger.LogInformation("Seeded {CountryCount} countries, {CityCount} cities, {AttractionCount} attractions, {ReviewCount} reviews and {UserCount} users.",
-            countries.Count,
-            cities.Count,
-            attractions.Count,
-            reviews.Count,
-            users.Count);
+        return reviews.Count;
     }
 
     public Task ClearTestDataAsync()
@@ -185,28 +199,36 @@ public class AdminDbRepos : IAdminDbRepos
         if (!_dbContext.Database.IsSqlServer())
             throw new NotSupportedException("ClearTestData and Overview currently require SQL Server.");
 
-        await _dbContext.Database.ExecuteSqlRawAsync("""
-            CREATE OR ALTER PROCEDURE dbo.ClearTravelTestData
-            AS
-            BEGIN
-                SET NOCOUNT ON;
-                DELETE FROM dbo.AttractionCategories;
-                DELETE FROM dbo.Reviews;
-                DELETE FROM dbo.Attractions;
-                DELETE FROM dbo.Cities;
-                DELETE FROM dbo.Categories;
-                DELETE FROM dbo.Users;
-                DELETE FROM dbo.Countries;
-            END
-            """);
+        var procedurePath = Path.Combine(
+            AppContext.BaseDirectory,
+            "SqlScripts",
+            "sqlserver",
+            "ClearTravelTestData.sql");
+        var procedureSql = await File.ReadAllTextAsync(procedurePath);
+        var connection = _dbContext.Database.GetDbConnection();
+        var openedConnection = connection.State == System.Data.ConnectionState.Closed;
+        if (openedConnection)
+            await connection.OpenAsync();
+
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = procedureSql;
+            await command.ExecuteNonQueryAsync();
+        }
+        finally
+        {
+            if (openedConnection)
+                await connection.CloseAsync();
+        }
 
         await _dbContext.Database.ExecuteSqlRawAsync("""
             CREATE OR ALTER VIEW dbo.TravelDatabaseOverview
             AS
             SELECT
-                (SELECT COUNT(*) FROM dbo.Users) AS UserCount,
-                (SELECT COUNT(*) FROM dbo.Cities) AS CityCount,
-                (SELECT COUNT(*) FROM dbo.Attractions) AS AttractionCount
+                (SELECT COUNT(*) FROM dbo.[User]) AS UserCount,
+                (SELECT COUNT(*) FROM dbo.City) AS CityCount,
+                (SELECT COUNT(*) FROM dbo.Attraction) AS AttractionCount
             """);
     }
 
@@ -216,11 +238,4 @@ public class AdminDbRepos : IAdminDbRepos
         _encryptions = encryptions;
         _dbContext = context;
     }
-}
-
-public class DatabaseOverview
-{
-    public int UserCount { get; set; }
-    public int CityCount { get; set; }
-    public int AttractionCount { get; set; }
 }

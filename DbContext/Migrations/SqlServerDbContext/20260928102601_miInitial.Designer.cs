@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DbContext.Migrations.SqlServerDbContext
 {
     [DbContext(typeof(MainDbContext.SqlServerDbContext))]
-    [Migration("20260919191547_miInitial")]
+    [Migration("20260928102601_miInitial")]
     partial class miInitial
     {
         /// <inheritdoc />
@@ -58,6 +58,11 @@ namespace DbContext.Migrations.SqlServerDbContext
                     b.Property<string>("Description")
                         .HasColumnType("varchar(200)");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("varchar(200)");
+
                     b.Property<string>("Name")
                         .HasColumnType("varchar(200)");
 
@@ -65,7 +70,11 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasIndex("CityId");
 
-                    b.ToTable("Attractions");
+                    b.ToTable("Attraction");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("Attraction");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Models.Category", b =>
@@ -74,12 +83,21 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("varchar(200)");
+
                     b.Property<string>("Name")
                         .HasColumnType("varchar(200)");
 
                     b.HasKey("CategoryId");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Category");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("Category");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Models.City", b =>
@@ -91,6 +109,11 @@ namespace DbContext.Migrations.SqlServerDbContext
                     b.Property<Guid>("CountryId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(200)");
+
                     b.Property<string>("Name")
                         .HasColumnType("varchar(200)");
 
@@ -98,7 +121,11 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasIndex("CountryId");
 
-                    b.ToTable("Cities");
+                    b.ToTable("City");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("City");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Models.Country", b =>
@@ -107,12 +134,21 @@ namespace DbContext.Migrations.SqlServerDbContext
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("varchar(200)");
+
                     b.Property<string>("Name")
                         .HasColumnType("varchar(200)");
 
                     b.HasKey("CountryId");
 
-                    b.ToTable("Countries");
+                    b.ToTable("Country");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("Country");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Models.Review", b =>
@@ -130,8 +166,13 @@ namespace DbContext.Migrations.SqlServerDbContext
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<byte>("Score")
-                        .HasColumnType("tinyint");
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -142,7 +183,11 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Reviews");
+                    b.ToTable("Review");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("Review");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Models.User", b =>
@@ -154,6 +199,11 @@ namespace DbContext.Migrations.SqlServerDbContext
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(200)");
+
                     b.Property<string>("Email")
                         .HasColumnType("varchar(200)");
 
@@ -162,7 +212,53 @@ namespace DbContext.Migrations.SqlServerDbContext
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Users");
+                    b.ToTable("User");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("User");
+
+                    b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("DbModels.AttractionDbM", b =>
+                {
+                    b.HasBaseType("Models.Attraction");
+
+                    b.HasDiscriminator().HasValue("AttractionDbM");
+                });
+
+            modelBuilder.Entity("DbModels.CategoryDbM", b =>
+                {
+                    b.HasBaseType("Models.Category");
+
+                    b.HasDiscriminator().HasValue("CategoryDbM");
+                });
+
+            modelBuilder.Entity("DbModels.CityDbM", b =>
+                {
+                    b.HasBaseType("Models.City");
+
+                    b.HasDiscriminator().HasValue("CityDbM");
+                });
+
+            modelBuilder.Entity("DbModels.CountryDbM", b =>
+                {
+                    b.HasBaseType("Models.Country");
+
+                    b.HasDiscriminator().HasValue("CountryDbM");
+                });
+
+            modelBuilder.Entity("DbModels.ReviewDbM", b =>
+                {
+                    b.HasBaseType("Models.Review");
+
+                    b.HasDiscriminator().HasValue("ReviewDbM");
+                });
+
+            modelBuilder.Entity("DbModels.UserDbM", b =>
+                {
+                    b.HasBaseType("Models.User");
+
+                    b.HasDiscriminator().HasValue("UserDbM");
                 });
 
             modelBuilder.Entity("AttractionCategory", b =>

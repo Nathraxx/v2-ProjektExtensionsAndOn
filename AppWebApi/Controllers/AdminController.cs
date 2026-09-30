@@ -7,7 +7,6 @@ using Services;
 using Configuration;
 using Configuration.Options;
 using Microsoft.Extensions.Options;
-using DbRepos;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -26,13 +25,12 @@ namespace AppWebApi.Controllers
         readonly Encryptions _encryptions = null;
         readonly DatabaseConnections _dbConnections = null;
         readonly IAdminService _service;
-        readonly IAdminDbRepos _adminDbRepos;
 
         [HttpDelete()]
         [ActionName("ClearTestData")]
         public async Task<IActionResult> ClearTestData()
         {
-            await _adminDbRepos.ClearTestDataAsync();
+            await _service.ClearTestDataAsync();
             return Ok("Test data deleted");
         }
 
@@ -40,7 +38,7 @@ namespace AppWebApi.Controllers
         [ActionName("Overview")]
         public async Task<IActionResult> Overview()
         {
-            return Ok(await _adminDbRepos.GetOverviewAsync());
+            return Ok(await _service.GetOverviewAsync());
         }
 
         //GET: api/admin/environment
@@ -91,7 +89,7 @@ namespace AppWebApi.Controllers
                 _logger.LogInformation($"{nameof(Seed)}");
                 await _service.SeedAsync(nrItems);
 
-                return Ok($"Seeded {nrItems} items successfully");
+                return Ok("Seeded 50 users, 100 cities, and 1000 attractions successfully");
             }
             catch (Exception ex)
             {
@@ -122,7 +120,7 @@ namespace AppWebApi.Controllers
                     IOptions<JwtOptions> jwtOptions,
                     IOptions<VersionOptions> versionOptions,
                     Encryptions encryptions, DatabaseConnections dbConnections,
-                    IAdminService service, IAdminDbRepos adminDbRepos)
+                    IAdminService service)
         {
             _logger = logger;
 
@@ -136,7 +134,6 @@ namespace AppWebApi.Controllers
             _dbConnections = dbConnections;
 
             _service = service;
-            _adminDbRepos = adminDbRepos;
         }
     }
 }

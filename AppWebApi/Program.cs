@@ -7,7 +7,7 @@ using Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// NOTE: global cors policy needed for JS and React frontends
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>

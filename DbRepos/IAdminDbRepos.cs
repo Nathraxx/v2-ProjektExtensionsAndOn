@@ -1,3 +1,5 @@
+using Models;
+
 namespace DbRepos;
 
 public interface IAdminDbRepos

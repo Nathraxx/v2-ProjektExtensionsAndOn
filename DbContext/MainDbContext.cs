@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 
 using Configuration;
 using Models;
+using DbModels;
 using Microsoft.Extensions.Hosting.Internal;
 using DbContext.Extensions;
 
@@ -25,12 +26,12 @@ public class MainDbContext : Microsoft.EntityFrameworkCore.DbContext
 #endif
 
     #region C# model of database tables
-    public DbSet<Country> Countries { get; set; }
-    public DbSet<City> Cities { get; set; }
-    public DbSet<Attraction> Attractions { get; set; }
-    public DbSet<Category> Categories { get; set; }
-    public DbSet<Review> Reviews { get; set; }
-    public DbSet<User> Users { get; set; }
+    public DbSet<CountryDbM> Countries { get; set; }
+    public DbSet<CityDbM> Cities { get; set; }
+    public DbSet<AttractionDbM> Attractions { get; set; }
+    public DbSet<CategoryDbM> Categories { get; set; }
+    public DbSet<ReviewDbM> Reviews { get; set; }
+    public DbSet<UserDbM> Users { get; set; }
     #endregion
 
     #region constructors

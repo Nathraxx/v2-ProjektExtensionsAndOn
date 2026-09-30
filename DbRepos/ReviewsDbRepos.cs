@@ -34,9 +34,40 @@ public class ReviewsDbRepos : IReviewsDbRepos
         };
     }
 
+    public async Task<PagedResult<Review>> GetByUserAsync(Guid userId, int page, int pageSize)
+    {
+        var query = _dbContext.Reviews
+            .Where(review => review.UserId == userId)
+            .Include(review => review.Attraction)
+                .ThenInclude(attraction => attraction.City)
+                    .ThenInclude(city => city.Country)
+            .AsNoTracking();
+        var totalCount = await query.CountAsync();
+        var items = await query.OrderByDescending(review => review.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Review>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
+    }
+
     public async Task AddAsync(Review review)
     {
-        _dbContext.Reviews.Add(review);
+        _dbContext.Reviews.Add(new DbModels.ReviewDbM
+        {
+            ReviewId = review.ReviewId,
+            AttractionId = review.AttractionId,
+            UserId = review.UserId,
+            CommentText = review.CommentText,
+            Score = review.Score,
+            CreatedAt = review.CreatedAt
+        });
         await _dbContext.SaveChangesAsync();
     }
 }

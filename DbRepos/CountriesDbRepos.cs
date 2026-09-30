@@ -14,10 +14,13 @@ public class CountriesDbRepos
     }
 
     public async Task<List<Country>> GetAllAsync()
-        => await _dbContext.Countries
+    {
+        var countries = await _dbContext.Countries
             .Include(c => c.Cities)
             .AsNoTracking()
             .ToListAsync();
+        return countries.Cast<Country>().ToList();
+    }
 
     public async Task<Country?> GetByIdAsync(Guid countryId)
         => await _dbContext.Countries

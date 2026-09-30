@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Models;
+using Models.DTO;
 using DbContext;
 
 namespace DbRepos;
@@ -14,24 +15,31 @@ public class UsersDbRepos : IUsersDbRepos
     }
 
     public async Task<List<User>> GetAllAsync()
-        => await _dbContext.Users
+    {
+        var users = await _dbContext.Users
             .Include(u => u.Reviews)
             .AsNoTracking()
             .ToListAsync();
+        return users.Cast<User>().ToList();
+    }
 
-    public async Task<PagedResult<User>> GetPagedAsync(int page, int pageSize)
+    public async Task<PagedResult<UserSummaryDto>> GetPagedAsync(int page, int pageSize)
     {
-        var query = _dbContext.Users
-            .Include(u => u.Reviews)
-                .ThenInclude(r => r.Attraction)
-            .AsNoTracking();
+        var query = _dbContext.Users.AsNoTracking();
         var totalCount = await query.CountAsync();
         var items = await query.OrderBy(u => u.Username)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(user => new UserSummaryDto
+            {
+                UserId = user.UserId,
+                Username = user.Username,
+                Email = user.Email,
+                CreatedAt = user.CreatedAt
+            })
             .ToListAsync();
 
-        return new PagedResult<User>
+        return new PagedResult<UserSummaryDto>
         {
             Items = items,
             Page = page,
@@ -47,7 +55,13 @@ public class UsersDbRepos : IUsersDbRepos
 
     public async Task AddAsync(User user)
     {
-        _dbContext.Users.Add(user);
+        _dbContext.Users.Add(new DbModels.UserDbM
+        {
+            UserId = user.UserId,
+            Username = user.Username,
+            Email = user.Email,
+            CreatedAt = user.CreatedAt
+        });
         await _dbContext.SaveChangesAsync();
     }
 }

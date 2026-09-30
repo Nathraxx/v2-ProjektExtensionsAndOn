@@ -5,5 +5,6 @@ namespace DbRepos;
 public interface IReviewsDbRepos
 {
     Task<PagedResult<Review>> GetByAttractionAsync(Guid attractionId, int page, int pageSize);
+    Task<PagedResult<Review>> GetByUserAsync(Guid userId, int page, int pageSize);
     Task AddAsync(Review review);
 }

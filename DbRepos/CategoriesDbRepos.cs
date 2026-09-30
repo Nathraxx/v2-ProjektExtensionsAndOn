@@ -14,9 +14,12 @@ public class CategoriesDbRepos
     }
 
     public async Task<List<Category>> GetAllAsync()
-        => await _dbContext.Categories
+    {
+        var categories = await _dbContext.Categories
             .AsNoTracking()
             .ToListAsync();
+        return categories.Cast<Category>().ToList();
+    }
 
     public async Task<Category?> GetByIdAsync(Guid categoryId)
         => await _dbContext.Categories
